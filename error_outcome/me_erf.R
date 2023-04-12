@@ -31,11 +31,11 @@ out_me <- function(A0, A1, X0, X1, Y0, Y1_me, Y1_true,
   ipw <- mod$weights
   
   Y <- c(Y0, Y1_me - Y1_true)
-  psi <- Y*ipw
+  psi <- Y
   
   ## kernel weighted least squares
   out <- sapply(a.vals, kern_ipw, a = A, s = S, x = X, psi = psi, ipw = ipw, 
-                 cmat = cmat, astar = astar, astar2 = astar2, bw = bw, se.fit = se.fit)
+                cmat = cmat, astar = astar, astar2 = astar2, bw = bw, se.fit = se.fit)
   
   ## spline method
   # out0 <- spl_ipw(a = A0, psi = psi0, a.vals = a.vals, df = 6, se.fit = TRUE)
@@ -87,7 +87,7 @@ esteq <- function(p, s, x, psi, g.std, astar, astar2, ipw, eta, theta) {
   eq6 <- s*(p*x - theta)
   eq7 <- (1 - s)*(x - theta)
   
-  eq8 <- 2*(1 - s)*(psi - eta)*g.std - 2*s*(psi - eta)*g.std
+  eq8 <- 2*p*(psi - eta)*g.std
   
   eq <- c(eq1, eq2, eq3, eq4, eq5, eq6, eq7, eq8) 
   return(eq)
@@ -99,13 +99,13 @@ kern_ipw <- function(a.new, a, s, x, psi, astar, astar2, cmat, ipw, bw = 1, se.f
   
   n <- length(a)
   m <- ncol(x)
-
+  
   # Gaussian Kernel
   a.std <- (a - a.new) / bw
   k.std <- dnorm(a.std) / bw
   g.std <- cbind((1 - s)*a.std, s*a.std, (1 - s), s)
   
-  b <- lm(psi ~ -1 + g.std, weights = k.std)$coefficients
+  b <- lm(psi ~ -1 + g.std, weights = k.std*ipw)$coefficients
   mu <- unname(b[3] - b[4])
   
   if (se.fit) {
@@ -123,9 +123,9 @@ kern_ipw <- function(a.new, a, s, x, psi, astar, astar2, cmat, ipw, bw = 1, se.f
       U[(3*m + 3):(4*m + 2),(4*m + 3):(5*m + 2)] <- U[(3*m + 3):(4*m + 2),(4*m + 3):(5*m + 2)] - diag(s[i], m, m)
       U[(4*m + 3):(5*m + 2),(4*m + 3):(5*m + 2)] <- U[(4*m + 3):(5*m + 2),(4*m + 3):(5*m + 2)] - diag(1 - s[i], m, m)
       
-      V[,1:(4*m + 2)] <- V[,1:(4*m + 2)] + 2*(2*s[i] - 1)*k.std[i]*(psi[i] - eta[i])*tcrossprod(g.std[i,],cmat[i,])
-      V[,(5*m + 3):(5*m + 6)] <- V[,(5*m + 3):(5*m + 6)] + 2*(2*s[i] - 1)*k.std[i]*tcrossprod(g.std[i,])
-
+      V[,1:(4*m + 2)] <- V[,1:(4*m + 2)] - k.std[i]*ipw[i]*(psi[i] - eta[i])*tcrossprod(g.std[i,],cmat[i,])
+      V[,(5*m + 3):(5*m + 6)] <- V[,(5*m + 3):(5*m + 6)] - k.std[i]*ipw[i]*tcrossprod(g.std[i,])
+      
       meat <- meat + tcrossprod(esteq(p = ipw[i], s = s[i], x = x[i,], psi = psi[i], g.std = g.std[i,],
                                       astar = astar[i], astar2 = astar2[i], eta = eta[i], theta = theta))
       
@@ -145,7 +145,8 @@ kern_ipw <- function(a.new, a, s, x, psi, astar, astar2, cmat, ipw, bw = 1, se.f
     } else {
       
       sandwich <- bread %*% meat %*% t(bread)
-      variance <- sandwich[5*m + 5, 5*m + 5] + sandwich[5*m + 6, 5*m + 6] 
+      variance <- sandwich[5*m + 5, 5*m + 5] + sandwich[5*m + 6, 5*m + 6] -
+        2*sandwich[5*m + 5, 5*m + 6]
       
     }
     
