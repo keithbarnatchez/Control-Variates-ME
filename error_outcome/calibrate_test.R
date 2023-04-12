@@ -8,8 +8,8 @@ library(splines)
 library(SuperLearner)
 
 # Code for generating and fitting data
-source("~/Github/ME-Causal-Review/R/error_outcome/calibrate.R")
-source("~/Github/ME-Causal-Review/R/error_outcome/me_erf.R")
+source("~/Github/Control-Variates-ME/error_outcome/calibrate.R")
+source("~/Github/Control-Variates-ME/error_outcome/me_erf.R")
 
 ### Test RC/DR estimator
 n.sim <- 100
@@ -69,7 +69,7 @@ out <- mclapply(1:n.sim, function(i, ...) {
   return(list(est = t(data.frame(true_erc = true_erc, naive_est = naive$estimate, adjust_est = adjust$estimate)),
               se = t(data.frame(adjust_se = adjust$se, naive_se = naive$se))))
   
-}, mc.cores = 8, mc.preschedule = TRUE)
+}, mc.cores = 25, mc.preschedule = TRUE)
 
 stop <- Sys.time()
 stop - start
