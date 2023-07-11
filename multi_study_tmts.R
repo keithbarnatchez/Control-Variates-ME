@@ -1,7 +1,7 @@
 # testing code for multi study data, with different treatments
 #
 
-.libPaths("~/apps/R_4.1.0")
+# .libPaths("~/apps/R_4.1.0")
 library(AIPW)
 library(SuperLearner)
 library(reshape2)
@@ -366,4 +366,7 @@ final_res <- do.call(rbind, res_list)
 
 # write the output
 write.csv(final_res,file=fullpath)
+
+
+
 
