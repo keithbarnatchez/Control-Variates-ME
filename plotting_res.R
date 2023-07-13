@@ -1,6 +1,11 @@
  
-path <- 'sim_results/sim_results_2023-07-06_18-00-51.csv'
+path <- 'sim_results/sim_results_2023-07-07_10-27-00.csv'
 res <- read.csv(path)
+
+res <- res %>% mutate(cicovmime = 1-as.numeric( cilowmime>1 | cihimime<1  ),
+                                  cicovtilde = 1-as.numeric( cilowtilde>1 | cihitilde<1  ),
+                                  cicovoracle = 1-as.numeric( ciloworacle>1 | cihioracle<1  ),
+                                  cicovcvgen = 1-as.numeric( cilowcvgen>1 | cihicvgen<1  ))
 
 # Get long form of results for ATE estimates
 res_long <- res %>% select(-matches('^var1')) %>% 
@@ -38,17 +43,6 @@ res_long %>% filter(n==5000,rho==0.2) %>% ggplot(aes(x=as.factor(method),y=tau_e
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = 'none')
 
-res_long %>%  ggplot(aes(x=as.factor(method),y=tau_est,
-                   fill=as.factor(method))) + geom_violin() + 
-                    geom_hline(yintercept = 1,color='red') +
-  facet_wrap(~as.factor(sig_u),ncol=2) + theme_bw() +
-  theme(legend.position = 'bottom') +
-  labs(title='Varying sensitivity',
-       subtitle = 'Specificity fixed at 0.95',
-       y='ATE estimate',
-       x='Method') +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.position = 'none')
 
 
 #--------------

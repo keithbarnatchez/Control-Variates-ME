@@ -1,14 +1,16 @@
-# cluster version
-#
-# exposure ME
+# Helper functions for simulation study
 
-# .libPaths("~/apps/R_4.1.0")
-
-#
-
+# minor utility funcs
 expit <- function(o) {
   return( exp(o)/(1+exp(o)))
 }
+
+demean <- function(vec) {
+  return(vec-mean(vec))
+}
+
+#-------------------------------------------------------------------------------
+# DATA FUNCTIONS
 
 # Covariance matrices
 gen_sigma <- function(rho12,rho13,rho23) {
@@ -16,8 +18,8 @@ gen_sigma <- function(rho12,rho13,rho23) {
   #' generates covariance matrices (with 1s on the diagonals)
   
   sig <-  matrix(c(1,rho12,rho13,
-                    rho12,1,rho23,
-                    rho13,rho23,1),nrow=3,byrow=F)
+                   rho12,1,rho23,
+                   rho13,rho23,1),nrow=3,byrow=F)
   
   return(sig)
 }
@@ -103,6 +105,8 @@ gen_data <- function(n, rho, # sample sizes
   return(df)
   
 }
+#-------------------------------------------------------------------------------
+# ESTIMATION FUNCTIONS
 
 get_tau_hat <- function(df,
                         sl.lib = c("SL.mean","SL.glm","SL.glm.interaction")) {
@@ -122,18 +126,18 @@ get_tau_hat <- function(df,
   return(res) 
 }
 
-demean <- function(vec) {
-  return(vec-mean(vec))
-}
-
 get_vcov_asym <- function(tau_val_mod,cv_mods,
                           val_idx) {
   #' Uses influence-function based expressions to estimate Gamma and V
   #' See Theorem 1 of control variates paper for details
   #'
   #' INPUTS:
+  #' - tau_val_mod:
+  #' - cv_mods:
+  #' - val_idx:
   #' 
   #' OUTPUTS:
+  #' A list containing estimates of V and Gamma
   
   # Get influence function estimates
   phi_main <- cv_mods[[1]]$obs_est$aipw_eif1 - cv_mods[[1]]$obs_est$aipw_eif0
@@ -158,6 +162,8 @@ get_psi <- function(df) {
   #' Constructs psi1 and psi2 from dfs 1 and 2 by performing an error-prone
   #' AIPW regression (only using X1 and X2)
   #'
+  #' Recall psi1 and psi2 in our examples are the error-prone treatment effect
+  #' estimators
   
   dfs <- list()
   dfs[[1]] <- df # full data
@@ -191,9 +197,9 @@ get_ATE_cv <- function(df) {
   #' the control variates method to obtain ATE estimate
   #'
   #' INPUTS:
-  #' 
+  #' - a dataframe from the gen_data() function
   #' OUTPUTS:
-  #' 
+  #' - a list containing the ATE estimate, variance estimate and 95% CI
   
   # Keep track of val data
   df_val <- df %>% filter(val_idx==1)
@@ -231,8 +237,11 @@ get_ATE_cv <- function(df) {
 }
 
 get_vcov_boot <- function(df, nboot=25) {
-  
-  # work in progress
+  #' Code for estimating the Gamma and V terms from the asymptotic covariance
+  #' matrix (see e.g. thm 1) via bootstrapping
+  #' 
+  #' Note: this code isn't being used in simulations at the moment since we 
+  #' have faster alternatives
   
   tau_m <- get_tau(dfs[[1]])
   psi_m <- get_psi(df)
@@ -320,12 +329,17 @@ mime <- function(data,m=20,
 
 main_sim <- function(nsim,
                      params,
-                     nboot=50) {
+                     nboot=500) {
+  #' Main function for implementing simulation exercise
+  #'
+  #' INPUTS:
+  #' - nsim: desired number of iterations
+  #' - params: a list containing all relevant parameters needed for generating 
+  #'           the data (see the main simulation execution file for details)
+  #' - nboot: when bootstrapping, the # of bootstrap iterations
   #' 
-  #'
-  #'
-  #'
-  #'
+  #' OUTPUTS:
+  #' - a dataframe containing the results of each iteration
   
   # extract names from params
   list2env(params,envir = environment() )
@@ -337,15 +351,13 @@ main_sim <- function(nsim,
     
     # sample data
     df <- gen_data(n, rho,
-                    sig,sig_y,
-                    basemu,
-                    alphas,betas,tau,gammas,
-                    etas,
-                    sens, spec,
-                    outcome_model,
-                    error_systematic)
-    
-   
+                   sig,sig_y,
+                   basemu,
+                   alphas,betas,tau,gammas,
+                   etas,
+                   sens, spec,
+                   outcome_model,
+                   error_systematic)
     
     df_val <- df %>% filter(val_idx==1)
     
@@ -362,7 +374,7 @@ main_sim <- function(nsim,
     var1tilde <- tau1tilderes$var_hat
     cilowtilde <- tau1tilde - 1.96*sqrt(var1tilde)
     cihitilde <- tau1tilde + 1.96*sqrt(var1tilde)
-  
+    
     # Store control variates
     psis <- get_psi(df)
     psi1 <- psis[[1]]$estimates$RD['Estimate']
@@ -383,12 +395,12 @@ main_sim <- function(nsim,
     
     # ideal (access to true meas)
     oraclemod <- AIPW$new(Y=df$Y,
-                              A=df$A,
-                              W=subset(df,select=c("X1","X2","X3")),
-                              Q.SL.library = c("SL.mean","SL.glm","SL.glm.interaction"),
-                              g.SL.library = c("SL.mean","SL.glm","SL.glm.interaction"),
-                              k_split = 1,
-                              verbose=FALSE)$fit()$summary()
+                          A=df$A,
+                          W=subset(df,select=c("X1","X2","X3")),
+                          Q.SL.library = c("SL.mean","SL.glm","SL.glm.interaction"),
+                          g.SL.library = c("SL.mean","SL.glm","SL.glm.interaction"),
+                          k_split = 1,
+                          verbose=FALSE)$fit()$summary()
     tau1oracle <- oraclemod$estimates$RD['Estimate']
     var1oracle <- oraclemod$estimates$RD['SE']^2
     ciloworacle <- tau1oracle - 1.96*sqrt(var1oracle)
@@ -411,30 +423,37 @@ main_sim <- function(nsim,
     cihimime <- tau1mime + 1.96*sqrt(var1mime)
     
     # Uncongenial
-    mime_res_unc <- 1 # mime(data,congenial = F,m=10)
-    tau1mimeunc <-1 # mime_res_unc$ATE
-    var1mimeunc <- 1 #mime_res_unc$var_est
+    mime_res_unc <-  mime(data,congenial = F,m=10)
+    tau1mimeunc <-mime_res_unc$ATE
+    var1mimeunc <- mime_res_unc$var_est
     
     # Control variates generalizability
     # Note: this function lives in generalizability_funcs.R
-    tau1cvgen <- cv_est_generalizability(df,rho)$tau_cv
+    tau1cvgen_main <- cv_est_generalizability(df,rho)
+    tau1cvgen <- tau1cvgen_main$tau_cv
+    var1cvgen <- tau1cvgen_main$var_hat
+    cilowcvgen <- tau1cvgen - 1.96*sqrt(var1cvgen)
+    cihicvgen <- tau1cvgen + 1.96*sqrt(var1cvgen)
     
-  return(data.frame(tau1hat=tau1hat,
-                    tau1tilde=tau1tilde,
-                    psi1=psi1,psi2=psi2,
-                    tau1mime=tau1mime,
-                    tau1mimeunc=tau1mimeunc,
-                    tau1naive=tau1naive,
-                    tau1oracle=tau1oracle,
-                    tau1cvgen=tau1cvgen,
-                    var1hat=var1hat,var1tilde=var1tilde,var1oracle=var1oracle,
-                    var1naive=var1naive,var1mime=var1mime,
-                    var1mimeunc=var1mimeunc,
-                    cilowmime=cilowmime,cihimime=cihimime,
-                    cilowtilde=cilowtilde,cihitilde=cihitilde,
-                    cilownaive=cilownaive,cihinaive=cihinaive,
-                    ciloworacle=ciloworacle,cihioracle=cihioracle))
-  } # end the foreach
+    
+    return(data.frame(tau1hat=tau1hat,
+                      tau1tilde=tau1tilde,
+                      psi1=psi1,psi2=psi2,
+                      tau1mime=tau1mime,
+                      tau1mimeunc=tau1mimeunc,
+                      tau1naive=tau1naive,
+                      tau1oracle=tau1oracle,
+                      tau1cvgen=tau1cvgen,
+                      var1hat=var1hat,var1tilde=var1tilde,var1oracle=var1oracle,
+                      var1naive=var1naive,var1mime=var1mime,
+                      var1mimeunc=var1mimeunc,
+                      var1cvgen=var1cvgen,
+                      cilowmime=cilowmime,cihimime=cihimime,
+                      cilowtilde=cilowtilde,cihitilde=cihitilde,
+                      cilownaive=cilownaive,cihinaive=cihinaive,
+                      ciloworacle=ciloworacle,cihioracle=cihioracle,
+                      cilowcvgen=cilowcvgen,cihicvgen=cihicvgen))
+  }
   
   # stop parallel backend
   stopImplicitCluster()
