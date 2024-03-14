@@ -109,3 +109,4 @@ final_res <- final_res %>% mutate(cicovmime = 1-as.numeric( cilowmime>1 | cihimi
 
 # write the output
 write.csv(final_res,file=fullpath)
+

@@ -1,5 +1,5 @@
  
-path <- 'sim_results/sim_results_2023-07-07_10-27-00.csv'
+path <- 'sim_results/sim_results_2023-07-13_10-53-59.csv'
 res <- read.csv(path)
 
 res <- res %>% mutate(cicovmime = 1-as.numeric( cilowmime>1 | cihimime<1  ),
@@ -34,7 +34,7 @@ res_long_cov <- res %>% select(-matches('^var1')) %>%
 res_long %>% filter(n==5000,rho==0.2) %>% ggplot(aes(x=as.factor(method),y=tau_est,
                          fill=as.factor(method))) + geom_violin() + 
   geom_hline(yintercept = 1,color='red') +
-  facet_wrap(~as.factor(sens),ncol=2) + theme_bw() +
+  facet_wrap(~as.factor(omega),ncol=2) + theme_bw() +
   theme(legend.position = 'bottom') + theme_bw() +
   labs(title='Varying sensitivity',
        subtitle = 'Specificity fixed at 0.95',
@@ -116,7 +116,7 @@ cov_plot <- res_summ_cov %>% filter(n==5000,method!='Naive',method!='MIME Unc.')
        x='1-Sensitivity',
        y='95% CI Coverage Rate',
        color='') ; cov_plot
-
+ggsave("figures/cv-proj-coverage-grid-nonaive.pdf", plot = cov_plot, width = 8, height = 5, units = "in")
 
 
 
