@@ -218,17 +218,15 @@ cv_est_generalizability <- function(data,
   eif_val_ep <- ate_eif_ep_val_genz$EIF
   eif_main_ep <- ate_eif_ep_main$obs_est$aipw_eif1 -
                  ate_eif_ep_main$obs_est$aipw_eif0
-  gamma_hat <- 1/n * (cov(eif_val,eif_main_ep) -
-                      cov(eif_val,eif_val_ep))
+  gamma_hat <- 1/n * (cov(eif_val,eif_val_ep) -
+                      cov(eif_val,eif_main_ep))
 
-  # print(gamma_hat)
-  
+
   # Next, get V
-  V_hat <- 1/n * var(eif_val_ep + eif_main_ep)
-  print(gamma_hat/V_hat)
+  V_hat <- 1/n * var(eif_val_ep - eif_main_ep)
   
   # Finally, form the CV estimator
-  tau_cv <- tau_hat_val - gamma_hat/V_hat * (tau_hat_ep_main - tau_hat_ep_val)
+  tau_cv <- tau_hat_val - gamma_hat/V_hat * (tau_hat_ep_val - tau_hat_ep_main)
   
   # Get variance estimate for CV est variance
   var_hat <- v_hat_val - gamma_hat^2/V_hat
@@ -236,5 +234,9 @@ cv_est_generalizability <- function(data,
   return(list(tau_cv=tau_cv,
               var_hat=var_hat,
               gamma_hat=gamma_hat,
-              V_hat=V_hat))
+              V_hat=V_hat,
+              tau_hat_val=tau_hat_val,
+              v_hat_val=v_hat_val,
+              tau_hat_ep_val=tau_hat_ep_val,
+              tau_hat_ep_main=tau_hat_ep_main))
 }

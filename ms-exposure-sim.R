@@ -53,7 +53,7 @@ error_systematic <- FALSE
 sens_grid <-   c(0.8, 0.85,0.9,0.95)  # sensitivities
 n_grid <-  c(5000)  # sample size of main data
 rho_grid <- c(0.1, 0.2, 0.3, 0.4, 0.5) # val. data proportion
-err_grid <- c(TRUE,FALSE) # measurement errors systematic vs purely random
+err_grid <- FALSE # c(TRUE,FALSE) # measurement errors systematic vs purely random
 eta_grid <- c(TRUE,FALSE) # when true, selection into val. data depends on X
 
 # Create the grid
@@ -64,7 +64,7 @@ param_combos <- expand.grid(sens_grid=sens_grid,n_grid=n_grid,rho_grid=rho_grid,
 
 res_list <- list()
 # set up range for n1
-nsim <- 250 ; nboot <- 100
+nsim <- 1000  ; nboot <- 100
 for (i in 1:nrow(param_combos)) {
   
   curr_etas <- rep(NA,3)
@@ -109,4 +109,3 @@ final_res <- final_res %>% mutate(cicovmime = 1-as.numeric( cilowmime>1 | cihimi
 
 # write the output
 write.csv(final_res,file=fullpath)
-

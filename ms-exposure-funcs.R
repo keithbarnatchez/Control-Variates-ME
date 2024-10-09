@@ -1,4 +1,4 @@
-# Helper functions for simulation study
+# Helper functions for simulation study (CLUSTER VERSION)
 
 # minor utility funcs
 expit <- function(o) {
@@ -434,7 +434,8 @@ main_sim <- function(nsim,
     var1cvgen <- tau1cvgen_main$var_hat
     cilowcvgen <- tau1cvgen - 1.96*sqrt(var1cvgen)
     cihicvgen <- tau1cvgen + 1.96*sqrt(var1cvgen)
-    
+    tau1gen <- tau1cvgen_main$tau_hat_val
+    var1gen <- tau1cvgen_main$v_hat_val
     
     return(data.frame(tau1hat=tau1hat,
                       tau1tilde=tau1tilde,
@@ -444,10 +445,12 @@ main_sim <- function(nsim,
                       tau1naive=tau1naive,
                       tau1oracle=tau1oracle,
                       tau1cvgen=tau1cvgen,
+                      tau1gen=tau1gen,
                       var1hat=var1hat,var1tilde=var1tilde,var1oracle=var1oracle,
                       var1naive=var1naive,var1mime=var1mime,
                       var1mimeunc=var1mimeunc,
                       var1cvgen=var1cvgen,
+                      var1gen=var1gen,
                       cilowmime=cilowmime,cihimime=cihimime,
                       cilowtilde=cilowtilde,cihitilde=cihitilde,
                       cilownaive=cilownaive,cihinaive=cihinaive,
