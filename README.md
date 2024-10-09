@@ -18,32 +18,18 @@ procedure
 This file includes functions for implementing the **generalizability** version of 
 the control variates estimator (e.g. the estimator that takes into account 
 systematic differences in the covariate distribution between the validation data
-and overall data)
+and overall data). We generally recommend the generalizability implementation, as 
+the resulting estimator will tend to be more efficient 
 
-#### CLUSTER CODE
-- `ms-causal-exp.sh`
-This file submits a batch job request to run `ms-exposure-sim.R`. Edit it if you'd
-like to vary the amount of memory/cores used (the simulation is carried out in
-parallel)
 
 #### OUTPUT FILES
- - The `output` folder contains the results of different simulation runs, where the 
+ - The `sim_results` folder contains the results of different simulation runs, where the 
 filename corresponds to the date/time of the simulation run. Each row
-in the output dataset corresponds to a **single iteration** of a simulation (I
-don't aggregate upfront so that we can calculate different stats of interest 
-that may arise down-stream), with different operating characteristics
+in the output dataset corresponds to a **single simulation iteration**.
 
-- `plotting_res.R` is the main file used for plotting results. The user specifies
-a file from the `output` folder. Then, the results are averaged within different
+- `plotting-control-variates.R` is the main file used for plotting results. The user specifies
+a file from the `sim_results` folder. Then, the results are averaged within different
 combinations of parameter values, after which plots of %bias, RMSE and CI coverage
 are produced
-
-#### DATA EXAMPLE
-The file `clean_data.R` is used for cleaning the raw NHANES data files stored in 
-the `data` folder
-
-#### OLD FILES
-The `archive` folder contains old code from previous iterations of the project. 
-None of the files stored here are currently being used
 
 
