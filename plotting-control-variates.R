@@ -1,12 +1,24 @@
 # plotting-control-variates.R
 #
-# Plots for Control Variates manuscript. Make sure directory is set to root of 
+# Plots for Control Variates manuscript. Make sure directory is set to root of
 # the project
 #-------------------------------------------------------------------------------
 library(tidyverse)
 
-path <- 'sim_results/sim_results_2024-08-29_22-11-30.77386.csv'
+# Load in results. Separate cluster runs to keep sizes under GitHub limits
+path <- 'sim_results/sim_results_2025-03-12_10-04-18.022929.csv' #  'sim_results/sim_results_2024-08-29_22-11-29.251738.csv'
+
 res <- read.csv(path)
+
+# new_res <- c('sim_results/sim_results_2024-08-29_22-11-30.77385.csv',
+#              'sim_results/sim_results_2024-08-29_22-11-33.77693.csv',
+#              'sim_results/sim_results_2024-08-29_22-11-34.041517.csv',
+#              'sim_results/sim_results_2024-08-29_22-11-40.029741.csv')
+#
+# for (r in 1:length(new_res)) {
+#   tmp <- read.csv(new_res[r])
+#   res <- rbind(res, tmp)
+# }
 #-------------------------------------------------------------------------------
 # Some pre-processing
 
@@ -17,7 +29,7 @@ res <- res %>% mutate(cicovmime = 1-as.numeric( cilowmime>1 | cihimime<1  ),
                       cicovcvgen = 1-as.numeric( cilowcvgen>1 | cihicvgen<1  ))
 
 # Get long form of results for ATE estimates
-res_long <- res %>% select(-matches('^var1')) %>% 
+res_long <- res %>% select(-matches('^var1')) %>%
   pivot_longer(cols = starts_with('tau1'),
                names_to = 'method',
                values_to = 'tau_est') %>%
@@ -32,7 +44,7 @@ res_long <- res %>% select(-matches('^var1')) %>%
   filter(!(method %in% c('MIME Unc.', 'C.V.')) )
 
 # Same, but with CIs
-res_long_cov <- res %>% select(-matches('^var1')) %>% 
+res_long_cov <- res %>% select(-matches('^var1')) %>%
   select(-matches('^tau1')) %>%
   pivot_longer(cols = starts_with('cicov'),
                names_to = 'method',
@@ -50,26 +62,26 @@ grp_vec <- c('method','sens','n','rho','etas1')
 # First, for tmt effect estimates
 res_summ <- res_long %>% group_by(across(all_of(grp_vec))) %>%
   summarize(per_bias = mean(100*(tau_est-1)),
-            rmse = sqrt(mean( (tau_est-1)^2 ) ) ) %>% 
+            rmse = sqrt(mean( (tau_est-1)^2 ) ) ) %>%
   mutate(val_nonr = ifelse(is.na(etas1),'S completely random', 'S depends on X'),
-         rho_desc = paste('P(S=1) =',rho)) %>% 
+         rho_desc = paste('P(S=1) =',rho)) %>%
   pivot_longer(cols=c(per_bias,rmse),names_to='outcome',values_to='value')
 
 # Next, for ci coverage
 res_summ_cov <- res_long_cov %>% group_by(across(all_of(grp_vec))) %>%
-  summarize(cov_rate = mean(100*ci_coverage,na.rm=T)) %>% 
+  summarize(cov_rate = mean(100*ci_coverage,na.rm=T)) %>%
   mutate(val_nonr = ifelse(is.na(etas1),'S completely random', 'S depends on X'),
-         rho_desc = paste('P(S=1) =',rho)) %>% 
+         rho_desc = paste('P(S=1) =',rho)) %>%
   pivot_longer(cols=c(cov_rate),names_to='outcome',values_to='value')
 
 # Bind together
-res_sum <- rbind(res_summ, res_summ_cov) %>% 
+res_sum <- rbind(res_summ, res_summ_cov) %>%
   mutate(outcome=recode(outcome,'rmse'='RMSE','per_bias'='% Bias','cov_rate'='95% C.I. cov.')) %>%
   filter(!( (outcome=='RMSE') & (method %in% c('Val. data only')) & !(is.na(etas1)) ) ) %>%
   filter(!( (outcome=='RMSE') & (method %in% c('Naive'))  ) ) %>%
   mutate(method=replace(method,method=='C.V. Gen.', 'Control variates'))
 #-------------------------------------------------------------------------------
-# Create plots 
+# Create plots
 
 # Set up axis limits
 y_limits <- res_sum %>%
@@ -86,7 +98,7 @@ y_limits <- y_limits %>%
 # Make plot for outcomes under conditionally random X
 srandom_plot <- res_sum %>% filter(n==5000,is.na(etas1)) %>% ggplot(aes(x=(1-sens),y=value,group=as.factor(method),
                                                                      color=as.factor(method))) +
-  geom_point() + geom_line() + facet_grid(outcome ~ as.factor(rho_desc),scales='free') + 
+  geom_point() + geom_line() + facet_grid(outcome ~ as.factor(rho_desc),scales='free') +
   theme_bw() +
   theme(legend.position = 'bottom',
         axis.text.x = element_text(size=10,angle=45,hjust=1)) +
@@ -94,12 +106,12 @@ srandom_plot <- res_sum %>% filter(n==5000,is.na(etas1)) %>% ggplot(aes(x=(1-sen
        x='1-Sensitivity',
        y='Operating characteristics',
        color='') ; srandom_plot
-ggsave("figures/enar-srandom-withtauval.pdf", plot = srandom_plot, width = 8, height = 5, units = "in")
+ggsave("figures/cv-srandom.pdf", plot = srandom_plot, width = 8, height = 5, units = "in")
 
 # Make grid plot for outcomes under random S
 scondrandom_plot <- res_sum %>% filter(n==5000,etas1==0.1) %>% ggplot(aes(x=(1-sens),y=value,group=as.factor(method),
                                                                           color=as.factor(method))) +
-  geom_point() + geom_line() + facet_grid(outcome ~ as.factor(rho_desc),scales='free') + 
+  geom_point() + geom_line() + facet_grid(outcome ~ as.factor(rho_desc),scales='free') +
   theme_bw() +
   theme(legend.position = 'bottom',
         axis.text.x = element_text(size=10,angle=45,hjust=1)) +
@@ -107,4 +119,4 @@ scondrandom_plot <- res_sum %>% filter(n==5000,etas1==0.1) %>% ggplot(aes(x=(1-s
        x='1-Sensitivity',
        y='Operating characteristics',
        color='') ; scondrandom_plot
-ggsave("figures/enar-s-cond-random-withtauval.pdf", plot = scondrandom_plot, width = 8, height = 5, units = "in")
+ggsave("figures/cv-scondrandom.pdf", plot = scondrandom_plot, width = 8, height = 5, units = "in")
