@@ -6,19 +6,21 @@
 library(tidyverse)
 
 # Load in results. Separate cluster runs to keep sizes under GitHub limits
-path <- 'sim_results/sim_results_2025-03-12_10-04-18.022929.csv' #  'sim_results/sim_results_2024-08-29_22-11-29.251738.csv'
+path <- 'sim_results/sim_results_2024-08-29_22-11-29.251738.csv' #  'sim_results/sim_results_2024-08-29_22-11-29.251738.csv'
 
 res <- read.csv(path)
 
-# new_res <- c('sim_results/sim_results_2024-08-29_22-11-30.77385.csv',
-#              'sim_results/sim_results_2024-08-29_22-11-33.77693.csv',
-#              'sim_results/sim_results_2024-08-29_22-11-34.041517.csv',
-#              'sim_results/sim_results_2024-08-29_22-11-40.029741.csv')
-#
-# for (r in 1:length(new_res)) {
-#   tmp <- read.csv(new_res[r])
-#   res <- rbind(res, tmp)
-# }
+# Broke batch jobs into separate runs -- append results
+new_res <- c('sim_results/sim_results_2024-08-29_22-11-30.77385.csv',
+             'sim_results/sim_results_2024-08-29_22-11-33.77693.csv',
+             'sim_results/sim_results_2024-08-29_22-11-34.041517.csv',
+             'sim_results/sim_results_2024-08-29_22-11-40.029741.csv',
+             'sim_results/sim_results_2025-06-10_12-05-45.85179.csv') # last file add results for n in 1000,2500,10000 after reviewer feedback
+
+for (r in 1:length(new_res)) {
+  tmp <- read.csv(new_res[r])
+  res <- rbind(res, tmp)
+}
 #-------------------------------------------------------------------------------
 # Some pre-processing
 
@@ -83,6 +85,8 @@ res_sum <- rbind(res_summ, res_summ_cov) %>%
 #-------------------------------------------------------------------------------
 # Create plots
 
+# Main results (n=5000)
+
 # Set up axis limits
 y_limits <- res_sum %>%
   filter(n == 5000, is.na(etas1), rho == 0.3) %>%
@@ -107,6 +111,7 @@ srandom_plot <- res_sum %>% filter(n==5000,is.na(etas1)) %>% ggplot(aes(x=(1-sen
        y='Operating characteristics',
        color='') ; srandom_plot
 ggsave("figures/cv-srandom.pdf", plot = srandom_plot, width = 8, height = 5, units = "in")
+ggsave("figures/cv-srandom.eps", plot = srandom_plot, width = 8, height = 5, units = "in") # for Biometrics
 
 # Make grid plot for outcomes under random S
 scondrandom_plot <- res_sum %>% filter(n==5000,etas1==0.1) %>% ggplot(aes(x=(1-sens),y=value,group=as.factor(method),
@@ -120,3 +125,51 @@ scondrandom_plot <- res_sum %>% filter(n==5000,etas1==0.1) %>% ggplot(aes(x=(1-s
        y='Operating characteristics',
        color='') ; scondrandom_plot
 ggsave("figures/cv-scondrandom.pdf", plot = scondrandom_plot, width = 8, height = 5, units = "in")
+ggsave("figures/cv-scondrandom.eps", plot = scondrandom_plot, width = 8, height = 5, units = "in") # for Biometrics
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+# Additional plots varying n (appendix figs)
+
+for (nn in c(1000,2500,10000)) { 
+  
+  # Set up axis limits
+  y_limits <- res_sum %>%
+    filter(n == nn, is.na(etas1), rho == 0.3) %>%
+    group_by(outcome) %>%
+    summarize(min_value = min(value, na.rm = TRUE),
+              max_value = max(value, na.rm = TRUE))
+  
+  # Expand limits slightly so stuff isn't borderline cut off
+  y_limits <- y_limits %>%
+    mutate(min_value = min_value - (0.05 * (max_value - min_value)),
+           max_value = max_value + (0.05 * (max_value - min_value)))
+  
+  # Make plot for outcomes under conditionally random X
+  srandom_plot <- res_sum %>% filter(n==nn,is.na(etas1)) %>% ggplot(aes(x=(1-sens),y=value,group=as.factor(method),
+                                                                        color=as.factor(method))) +
+    geom_point() + geom_line() + facet_grid(outcome ~ as.factor(rho_desc),scales='free') +
+    theme_bw() +
+    theme(legend.position = 'bottom',
+          axis.text.x = element_text(size=10,angle=45,hjust=1)) +
+    labs(title='Validation data obtained completely at random',
+         subtitle = paste('n=',nn),
+         x='1-Sensitivity',
+         y='Operating characteristics',
+         color='') ; srandom_plot
+  ggsave(paste0("figures/cv-srandom",nn,".pdf"), plot = srandom_plot, width = 8, height = 5, units = "in")
+  
+  # Make grid plot for outcomes under random S
+  scondrandom_plot <- res_sum %>% filter(n==nn,etas1==0.1) %>% ggplot(aes(x=(1-sens),y=value,group=as.factor(method),
+                                                                          color=as.factor(method))) +
+    geom_point() + geom_line() + facet_grid(outcome ~ as.factor(rho_desc),scales='free') +
+    theme_bw() +
+    theme(legend.position = 'bottom',
+          axis.text.x = element_text(size=10,angle=45,hjust=1)) +
+    labs(title='Validation data obtained conditionally at random',
+         subtitle = paste('n=',nn),
+         x='1-Sensitivity',
+         y='Operating characteristics',
+         color='') ; scondrandom_plot
+  ggsave(paste0("figures/cv-scondrandom",nn,".pdf"), plot = scondrandom_plot, width = 8, height = 5, units = "in")
+  
+}

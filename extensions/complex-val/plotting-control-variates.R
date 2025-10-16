@@ -6,7 +6,7 @@
 library(tidyverse)
 
 # Load in results. Separate cluster runs to keep sizes under GitHub limits
-path <- 'output/sim_results/sim_results_2025-04-22_01-42-50.485214.csv' #  'sim_results/sim_results_2024-08-29_22-11-29.251738.csv'
+path <- 'output/sim_results/sim_results_2025-04-22_01-42-50.485214.csv' 
 
 res <- read.csv(path)
 #-------------------------------------------------------------------------------
