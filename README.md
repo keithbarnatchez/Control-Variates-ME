@@ -21,6 +21,8 @@ systematic differences in the covariate distribution between the validation data
 and overall data). We generally recommend the generalizability implementation, as 
 the resulting estimator will tend to be more efficient 
 
+Additional extension exercises which consider (i) more complex validation schemes, and (ii) model misspecification can be found in the `extensions` folder.
+
 
 #### OUTPUT FILES
  - The `sim_results` folder contains the results of different simulation runs, where the 
